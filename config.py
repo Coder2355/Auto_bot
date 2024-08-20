@@ -4,4 +4,4 @@ BOT_TOKEN = 'your_bot_token'
 SOURCE_CHANNEL_ID = -1001234567890  # Replace with the source channel ID
 TARGET_CHANNEL_ID = -1009876543210  # Replace with the target channel ID
 CUSTOM_CAPTION = "Watch [Anime Name] now! 🎥\n\nJoin our channel: @your_channel"
-THUMBNAIL_PATH = "path_to_your_thumbnail.jpg"  # Path to your custom thumbnail
+THUMBNAIL_PATH = "Warrior Tamil.jpg"  # Path to your default thumbnail

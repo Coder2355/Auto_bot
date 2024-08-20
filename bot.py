@@ -3,14 +3,21 @@ from pyrogram.types import InputMediaPhoto
 import os
 import re
 import config
+from flask import Flask
 
-# Initialize the bot client
-app = Client(
+# Initialize the Flask app
+app_flask = Flask(__name__)
+
+# Initialize the Pyrogram bot client
+app_telegram = Client(
     "anime_upload_bot",
     api_id=config.API_ID,
     api_hash=config.API_HASH,
     bot_token=config.BOT_TOKEN
 )
+
+# Default thumbnail path (initially set to 'Warrior Tamil.jpg')
+thumbnail_path = "Warrior Tamil.jpg"
 
 # Function to extract details from the file name
 def extract_anime_details(file_name):
@@ -30,7 +37,7 @@ def rename_video(file_name):
         new_name = f"Renamed_Anime_Episode.mp4"  # Fallback name if pattern doesn't match
     return new_name
 
-@app.on_message(filters.chat(config.SOURCE_CHANNEL_ID) & filters.video)
+@app_telegram.on_message(filters.chat(config.SOURCE_CHANNEL_ID) & filters.video)
 async def forward_and_upload(client, message):
     # Download the video
     download_path = await message.download()
@@ -48,12 +55,22 @@ async def forward_and_upload(client, message):
         chat_id=config.TARGET_CHANNEL_ID,
         video=new_path,
         caption=config.CUSTOM_CAPTION,
-        thumb=config.THUMBNAIL_PATH,
+        thumb=thumbnail_path,
         supports_streaming=True
     )
 
     # Delete the local file after uploading
     os.remove(new_path)
 
+@app_telegram.on_message(filters.command("thumb") & filters.reply & filters.photo)
+async def set_thumbnail(client, message):
+    global thumbnail_path
+    thumbnail_path = await message.download(file_name="current_thumbnail.jpg")
+    await message.reply_text("Thumbnail has been updated successfully!")
+
+@app_flask.route('/')
+def home():
+    return "Anime Upload Bot is running!"
+
 if __name__ == "__main__":
-    app.run()
+    app_telegram.run()

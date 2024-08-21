@@ -40,6 +40,10 @@ async def auto_upload(client, message):
     # Log receipt of the message
     logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
 
+    # Notify the bot owner or channel that the process has started
+    bot_owner_id = message.from_user.id  # You can replace this with your specific Telegram ID if needed
+    await client.send_message(bot_owner_id, "Process started: Downloading and processing the video...")
+
     # Extract video details
     anime_name, episode_number, quality = extract_info_from_filename(message.video.file_name)
 
@@ -63,8 +67,12 @@ async def auto_upload(client, message):
         # Delete the local file after upload to save space
         os.remove(video_path)
         logger.info("Video uploaded successfully to the target channel.")
+
+        # Notify the bot owner that the process is complete
+        await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
     else:
         logger.warning("Filename format is not recognized. Skipping upload.")
+        await client.send_message(bot_owner_id, "Process failed: Filename format not recognized.")
 
 @flask_app.route('/webhook', methods=['POST'])
 def webhook():

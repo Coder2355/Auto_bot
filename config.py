@@ -15,5 +15,5 @@ TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "-1002183423252"))  # The
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "-1002245327685"))  # The channel to monitor for new videos
 
 # File paths and settings
-THUMBNAIL_PATH = "https://telegra.ph/file/feb6dd0a1cb8576943c0f.jpg"  # Path to your default thumbnail
+THUMBNAIL_PATH = os.getenv("THUMBNAIL_PATH", "https://telegra.ph/file/162f06ba78445ff3fee99.jpg")  # Path to your default thumbnail
 CUSTOM_CAPTION = "Anime: {anime_name}\nEpisode: {episode_number}\nQuality: {quality}"

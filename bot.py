@@ -35,6 +35,26 @@ async def start(client, message):
     start_text = "Hello! I'm the Auto Anime Upload Bot.\n\nI automatically monitor a source channel and upload videos to your target channel."
     await message.reply(start_text)
 
+@app.on_message(filters.command("add_thumb") & filters.photo & filters.private)
+async def add_thumbnail(client, message):
+    # Check if the user is the bot owner
+    if message.from_user.id != config.OWNER_ID:
+        await message.reply("You are not authorized to set the thumbnail.")
+        return
+
+    # Download the image to use as the thumbnail
+    photo_file = await message.download()
+    
+    # Update the config with the new thumbnail path
+    config.THUMBNAIL_PATH = photo_file
+
+    # Optionally, you can update the config file with the new path
+    with open("config.py", "a") as config_file:
+        config_file.write(f"\nTHUMBNAIL_PATH = '{photo_file}'\n")
+
+    await message.reply("Thumbnail updated successfully.")
+    logger.info(f"Thumbnail updated to {photo_file}")
+
 @app.on_message(filters.channel & filters.video & filters.chat(config.SOURCE_CHANNEL_ID))
 async def auto_upload(client, message):
     # Log receipt of the message
@@ -79,6 +99,7 @@ def webhook():
     # Handle incoming webhooks or other Flask-related routes here
     data = request.json
     return {"status": "received", "data": data}
+
 
 if __name__ == "__main__":
     app.run()

@@ -1,8 +1,13 @@
 import os
+import logging
 from flask import Flask, request
 from pyrogram import Client, filters
 import asyncio
 import config  # Import configurations from config.py
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Flask app setup
 flask_app = Flask(__name__)
@@ -32,10 +37,15 @@ async def start(client, message):
 
 @app.on_message(filters.channel & filters.video & filters.chat(config.SOURCE_CHANNEL_ID))
 async def auto_upload(client, message):
+    # Log receipt of the message
+    logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
+
     # Extract video details
     anime_name, episode_number, quality = extract_info_from_filename(message.video.file_name)
 
     if anime_name and episode_number and quality:
+        logger.info(f"Processing video: {anime_name} - {episode_number} - {quality}")
+
         # Create new file name
         new_filename = f"{anime_name} - {episode_number} - {quality}.mp4"
 
@@ -52,8 +62,9 @@ async def auto_upload(client, message):
 
         # Delete the local file after upload to save space
         os.remove(video_path)
+        logger.info("Video uploaded successfully to the target channel.")
     else:
-        print("Filename format is not recognized. Skipping upload.")
+        logger.warning("Filename format is not recognized. Skipping upload.")
 
 @flask_app.route('/webhook', methods=['POST'])
 def webhook():

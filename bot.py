@@ -56,20 +56,24 @@ async def auto_upload(client, message):
         # Download the video asynchronously
         video_path = await message.download(file_name=new_filename)
 
-        # Send the video with the new filename, custom caption, and thumbnail
-        await client.send_video(
-            chat_id=config.TARGET_CHANNEL_ID,
-            video=video_path,
-            caption=config.CUSTOM_CAPTION.format(anime_name=anime_name, episode_number=episode_number, quality=quality),
-            thumb=config.THUMBNAIL_PATH
-        )
+        try:
+            # Send the video with the new filename, custom caption, and thumbnail
+            await client.send_video(
+                chat_id=config.TARGET_CHANNEL_ID,
+                video=video_path,
+                caption=config.CUSTOM_CAPTION.format(anime_name=anime_name, episode_number=episode_number, quality=quality),
+                thumb=config.THUMBNAIL_PATH
+            )
+            logger.info("Video uploaded successfully to the target channel.")
 
-        # Delete the local file after upload to save space
-        os.remove(video_path)
-        logger.info("Video uploaded successfully to the target channel.")
-
-        # Notify the bot owner that the process is complete
-        await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
+            # Notify the bot owner that the process is complete
+            await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to upload video: {e}")
+            await client.send_message(bot_owner_id, f"Process failed: {e}")
+        finally:
+            # Delete the local file after upload to save space
+            os.remove(video_path)
     else:
         logger.warning("Filename format is not recognized. Skipping upload.")
         await client.send_message(bot_owner_id, "Process failed: Filename format not recognized.")
@@ -89,6 +93,7 @@ def webhook():
     # Handle incoming webhooks or other Flask-related routes here
     data = request.json
     return {"status": "received", "data": data}
+    
 
 if __name__ == "__main__":
     app.run()

@@ -41,7 +41,7 @@ async def auto_upload(client, message):
     logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
 
     # Notify the bot owner or channel that the process has started
-    bot_owner_id = message.from_user.id  # You can replace this with your specific Telegram ID if needed
+    bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
     await client.send_message(bot_owner_id, "Process started: Downloading and processing the video...")
 
     # Extract video details

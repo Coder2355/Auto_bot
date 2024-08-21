@@ -2,7 +2,6 @@ import os
 import logging
 from flask import Flask, request
 from pyrogram import Client, filters
-import asyncio
 import config  # Import configurations from config.py
 
 # Setup logging
@@ -13,10 +12,10 @@ logger = logging.getLogger(__name__)
 flask_app = Flask(__name__)
 
 app = Client(
-    "anime_bot",
+    "anime_userbot",  # This should be a userbot session name
     api_id=config.API_ID,
     api_hash=config.API_HASH,
-    bot_token=config.BOT_TOKEN
+    phone_number=config.PHONE_NUMBER  # This is needed for userbot login
 )
 
 def extract_info_from_filename(filename):
@@ -35,23 +34,21 @@ async def start(client, message):
     start_text = "Hello! I'm the Auto Anime Upload Bot.\n\nI automatically monitor a source channel and upload videos to your target channel."
     await message.reply(start_text)
 
+@app.on_message(filters.command("join_channel") & filters.private)
+async def join_channel(client, message):
+    # Automatically join a source channel
+    try:
+        await client.join_chat(config.SOURCE_CHANNEL_USERNAME)  # Use the channel's username to join
+        await message.reply(f"Successfully joined the channel: {config.SOURCE_CHANNEL_USERNAME}")
+        logger.info(f"Bot joined the channel: {config.SOURCE_CHANNEL_USERNAME}")
+    except Exception as e:
+        await message.reply(f"Failed to join the channel: {e}")
+        logger.error(f"Failed to join the channel: {e}")
+
 @app.on_message(filters.channel & filters.video & filters.chat(config.SOURCE_CHANNEL_ID))
 async def auto_upload(client, message):
     # Log receipt of the message
     logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
-
-    # Check if the bot is a member of the source channel
-    bot_member = await client.get_chat_member(config.SOURCE_CHANNEL_ID, client.me.id)
-    
-    if not bot_member:
-        # Notify the bot owner that the bot is not a member of the source channel
-        bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
-        await client.send_message(bot_owner_id, "The bot is not a member of the source channel and cannot forward messages.")
-        return
-
-    # Notify the bot owner or channel that the process has started
-    bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
-    await client.send_message(bot_owner_id, "Process started: Downloading and processing the video...")
 
     # Extract video details
     anime_name, episode_number, quality = extract_info_from_filename(message.video.file_name)
@@ -74,18 +71,13 @@ async def auto_upload(client, message):
                 thumb=config.THUMBNAIL_PATH
             )
             logger.info("Video uploaded successfully to the target channel.")
-
-            # Notify the bot owner that the process is complete
-            await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
         except Exception as e:
             logger.error(f"Failed to upload video: {e}")
-            await client.send_message(bot_owner_id, f"Process failed: {e}")
         finally:
             # Delete the local file after upload to save space
             os.remove(video_path)
     else:
         logger.warning("Filename format is not recognized. Skipping upload.")
-        await client.send_message(bot_owner_id, "Process failed: Filename format not recognized.")
 
 @app.on_message(filters.photo & filters.private)
 async def set_thumbnail(client, message):

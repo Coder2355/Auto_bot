@@ -14,5 +14,6 @@ OWNER_ID = int(os.getenv("OWNER_ID", "6299192020"))
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "-1002183423252"))  # The channel where videos will be uploaded
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "-1002245327685"))  # The channel to monitor for new videos
 
-# File paths and settings
-CUSTOM_CAPTION = "Anime: {anime_name}\nEpisode: {episode_number}\nQuality: {quality}"
+
+# Custom Caption Template
+CUSTOM_CAPTION = os.getenv("CUSTOM_CAPTION", "Anime: {anime_name}\nEpisode {episode_number} Added ✅\nQuality: {quality}✅\nClick to download your preferred quality ✅")

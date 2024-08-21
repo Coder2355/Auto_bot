@@ -42,18 +42,29 @@ async def add_thumbnail(client, message):
         await message.reply("You are not authorized to set the thumbnail.")
         return
 
+    # Log the received command
+    logger.info(f"Received /add_thumb command from {message.from_user.id}")
+
     # Download the image to use as the thumbnail
-    photo_file = await message.download()
-    
-    # Update the config with the new thumbnail path
-    config.THUMBNAIL_PATH = photo_file
+    try:
+        photo_file = await message.download()
+        if not photo_file:
+            await message.reply("Failed to download the photo.")
+            return
 
-    # Optionally, you can update the config file with the new path
-    with open("config.py", "a") as config_file:
-        config_file.write(f"\nTHUMBNAIL_PATH = '{photo_file}'\n")
+        # Update the config with the new thumbnail path
+        config.THUMBNAIL_PATH = photo_file
 
-    await message.reply("Thumbnail updated successfully.")
-    logger.info(f"Thumbnail updated to {photo_file}")
+        # Optionally, you can update the config file with the new path
+        with open("config.py", "a") as config_file:
+            config_file.write(f"\nTHUMBNAIL_PATH = '{photo_file}'\n")
+
+        await message.reply("Thumbnail updated successfully.")
+        logger.info(f"Thumbnail updated to {photo_file}")
+
+    except Exception as e:
+        logger.error(f"Error updating thumbnail: {e}")
+        await message.reply("An error occurred while updating the thumbnail.")
 
 @app.on_message(filters.channel & filters.video & filters.chat(config.SOURCE_CHANNEL_ID))
 async def auto_upload(client, message):
@@ -99,7 +110,6 @@ def webhook():
     # Handle incoming webhooks or other Flask-related routes here
     data = request.json
     return {"status": "received", "data": data}
-
 
 if __name__ == "__main__":
     app.run()

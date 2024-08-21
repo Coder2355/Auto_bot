@@ -40,6 +40,15 @@ async def auto_upload(client, message):
     # Log receipt of the message
     logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
 
+    # Check if the bot is a member of the source channel
+    bot_member = await client.get_chat_member(config.SOURCE_CHANNEL_ID, client.me.id)
+    
+    if not bot_member:
+        # Notify the bot owner that the bot is not a member of the source channel
+        bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
+        await client.send_message(bot_owner_id, "The bot is not a member of the source channel and cannot forward messages.")
+        return
+
     # Notify the bot owner or channel that the process has started
     bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
     await client.send_message(bot_owner_id, "Process started: Downloading and processing the video...")
@@ -93,7 +102,6 @@ def webhook():
     # Handle incoming webhooks or other Flask-related routes here
     data = request.json
     return {"status": "received", "data": data}
-    
 
 if __name__ == "__main__":
     app.run()

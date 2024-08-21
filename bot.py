@@ -2,6 +2,7 @@ import os
 import logging
 from flask import Flask, request
 from pyrogram import Client, filters
+import asyncio
 import config  # Import configurations from config.py
 
 # Setup logging
@@ -12,10 +13,10 @@ logger = logging.getLogger(__name__)
 flask_app = Flask(__name__)
 
 app = Client(
-    "anime_userbot",  # This should be a userbot session name
+    "anime_bot",
     api_id=config.API_ID,
     api_hash=config.API_HASH,
-    phone_number=config.PHONE_NUMBER  # This is needed for userbot login
+    bot_token=config.BOT_TOKEN
 )
 
 def extract_info_from_filename(filename):
@@ -34,21 +35,14 @@ async def start(client, message):
     start_text = "Hello! I'm the Auto Anime Upload Bot.\n\nI automatically monitor a source channel and upload videos to your target channel."
     await message.reply(start_text)
 
-@app.on_message(filters.command("join_channel") & filters.private)
-async def join_channel(client, message):
-    # Automatically join a source channel
-    try:
-        await client.join_chat(config.SOURCE_CHANNEL_USERNAME)  # Use the channel's username to join
-        await message.reply(f"Successfully joined the channel: {config.SOURCE_CHANNEL_USERNAME}")
-        logger.info(f"Bot joined the channel: {config.SOURCE_CHANNEL_USERNAME}")
-    except Exception as e:
-        await message.reply(f"Failed to join the channel: {e}")
-        logger.error(f"Failed to join the channel: {e}")
-
 @app.on_message(filters.channel & filters.video & filters.chat(config.SOURCE_CHANNEL_ID))
 async def auto_upload(client, message):
     # Log receipt of the message
     logger.info(f"Received video message in source channel {config.SOURCE_CHANNEL_ID}")
+
+    # Notify the bot owner or channel that the process has started
+    bot_owner_id = config.OWNER_ID  # Use the owner ID from the config
+    await client.send_message(bot_owner_id, "Process started: Downloading and processing the video...")
 
     # Extract video details
     anime_name, episode_number, quality = extract_info_from_filename(message.video.file_name)
@@ -63,21 +57,40 @@ async def auto_upload(client, message):
         video_path = await message.download(file_name=new_filename)
 
         try:
-            # Send the video with the new filename, custom caption, and thumbnail
+            # Create the caption with buttons
+            caption = (f"Anime: {anime_name}\n"
+                       f"Episode {episode_number} Added ✅\n"
+                       f"Quality: {quality}✅\n"
+                       "Enna quality venumo click pannunga File varum ✅")
+
+            # Create the buttons with qualities
+            buttons = [
+                [{"text": "480p", "url": "https://t.me/Anime_warrior_Tamil"}],
+                [{"text": "720p", "url": "https://t.me/Anime_warrior_Tamil"}],
+                [{"text": "1080p", "url": "https://t.me/Anime_warrior_Tamil"}],
+            ]
+
+            # Send the video with the new filename, custom caption, thumbnail, and buttons
             await client.send_video(
                 chat_id=config.TARGET_CHANNEL_ID,
                 video=video_path,
-                caption=config.CUSTOM_CAPTION.format(anime_name=anime_name, episode_number=episode_number, quality=quality),
-                thumb=config.THUMBNAIL_PATH
+                caption=caption,
+                thumb=config.THUMBNAIL_PATH,
+                reply_markup={"inline_keyboard": buttons}
             )
             logger.info("Video uploaded successfully to the target channel.")
+
+            # Notify the bot owner that the process is complete
+            await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
         except Exception as e:
             logger.error(f"Failed to upload video: {e}")
+            await client.send_message(bot_owner_id, f"Process failed: {e}")
         finally:
             # Delete the local file after upload to save space
             os.remove(video_path)
     else:
         logger.warning("Filename format is not recognized. Skipping upload.")
+        await client.send_message(bot_owner_id, "Process failed: Filename format not recognized.")
 
 @app.on_message(filters.photo & filters.private)
 async def set_thumbnail(client, message):
@@ -94,6 +107,7 @@ def webhook():
     # Handle incoming webhooks or other Flask-related routes here
     data = request.json
     return {"status": "received", "data": data}
+    
 
 if __name__ == "__main__":
     app.run()

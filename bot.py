@@ -70,7 +70,7 @@ async def auto_upload(client, message):
                 [{"text": "1080p", "url": "https://t.me/Anime_warrior_Tamil"}],
             ]
 
-            # Send the video with the new filename, custom caption, thumbnail, and buttons
+            # Upload the video with the new filename, custom caption, thumbnail, and buttons
             await client.send_video(
                 chat_id=config.TARGET_CHANNEL_ID,
                 video=video_path,
@@ -80,10 +80,20 @@ async def auto_upload(client, message):
             )
             logger.info("Video uploaded successfully to the target channel.")
 
+            # Upload the video as a file with buttons
+            await client.send_document(
+                chat_id=config.TARGET_CHANNEL_ID,
+                document=video_path,
+                caption=caption,
+                thumb=config.THUMBNAIL_PATH,
+                reply_markup={"inline_keyboard": buttons}
+            )
+            logger.info("File shared successfully to the target channel.")
+
             # Notify the bot owner that the process is complete
-            await client.send_message(bot_owner_id, "Process completed: Video uploaded successfully.")
+            await client.send_message(bot_owner_id, "Process completed: Video uploaded and file shared successfully.")
         except Exception as e:
-            logger.error(f"Failed to upload video: {e}")
+            logger.error(f"Failed to upload video or share file: {e}")
             await client.send_message(bot_owner_id, f"Process failed: {e}")
         finally:
             # Delete the local file after upload to save space

@@ -15,5 +15,4 @@ TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "-1002183423252"))  # The
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "-1002245327685"))  # The channel to monitor for new videos
 
 # File paths and settings
-THUMBNAIL_PATH = 'path/to/default_thumbnail.jpg'  ## Path to your default thumbnail
 CUSTOM_CAPTION = "Anime: {anime_name}\nEpisode: {episode_number}\nQuality: {quality}"

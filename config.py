@@ -14,7 +14,8 @@ OWNER_ID = int(os.getenv("OWNER_ID", "6299192020"))
 TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "-1002183423252"))  # The channel where videos will be uploaded
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "-1002245327685"))  # The channel to monitor for new videos
 
-FILE_STORE_BOT_ID = "@Occoccicfx_bot"
+FILE_STORE_CHANNEL = int(os.getenv("FILE_STORE_CHANNEL", "-1002234974607"))  # The channel to monitor for new videos
+
 THUMBNAIL_PATH = 'path_to_thumbnail'  # Initially can be None
 
 # Custom Caption Template

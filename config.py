@@ -15,7 +15,6 @@ TARGET_CHANNEL_ID = int(os.getenv("TARGET_CHANNEL_ID", "-1002183423252"))  # The
 SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "-1002245327685"))  # The channel to monitor for new videos
 
 FILE_STORE_BOT_ID = '7286203469'
-OWNER_ID = '6299192020'
 THUMBNAIL_PATH = 'path_to_thumbnail'  # Initially can be None
 
 # Custom Caption Template

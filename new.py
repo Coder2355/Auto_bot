@@ -13,31 +13,28 @@ from PIL import Image
 import os, time, re, random, asyncio
 
 
-@Client.on_message(filters.private & filters.user(Config.ADMIN) & (filters.document | filters.audio | filters.video))
+
+@Client.on_message(filters.private & (filters.document | filters.audio | filters.video) & filters.user(Config.ADMIN))
 async def rename_start(client, message):
     file = getattr(message, message.media.value)
     filename = file.file_name  
-    if file.file_size > 4000 * 2048 * 2048:
-         return await message.reply_text("Sorry Bro This Bot Doesn't Support Uploading Files Bigger Than 2GB")
+    if file.file_size > 2000 * 1024 * 1024:
+        return await message.reply_text("Sorry, this bot doesn't support files larger than 2GB.")
+
+    user_id = message.chat.id
+    user_details[user_id] = {"filename": filename}
 
     try:
         await message.reply_text(
-            text=f"**Please Enter New Filename...**\n\n**Old File Name** :- `{filename}`",
-	    reply_to_message_id=message.id,  
-	    reply_markup=ForceReply(True)
+            text=f"**Please Enter New Filename...**\n\n**Old File Name:** `{filename}`",
+            reply_to_message_id=message.id,  
+            reply_markup=ForceReply(True)
         )       
         await sleep(30)
     except FloodWait as e:
         await sleep(e.value)
-        await message.reply_text(
-            text=f"**Please Enter New Filename**\n\n**Old File Name** :- `{filename}`",
-	    reply_to_message_id=message.id,  
-	    reply_markup=ForceReply(True)
-        )
     except:
         pass
-
-
 
 @Client.on_message(filters.private & filters.reply)
 async def refunc(client, message):
@@ -65,54 +62,55 @@ async def refunc(client, message):
             text=f"**Select The Output File Type**\n\n**File Name :-** `{new_name}`",
             reply_to_message_id=file.id,
             reply_markup=InlineKeyboardMarkup(button)
-        )
-
+	)
 
 
 @Client.on_callback_query(filters.regex("upload"))
-async def doc(bot, update):    
+async def doc(bot, update):  
+    user_id = update.message.chat.id
+    user_data = user_details.get(user_id)
+    if not user_data or "filename" not in user_data:
+        return await update.message.edit("Filename not found. Please restart the process.")
+
+    filename = user_data["filename"]
+    episode = extract_episode_number(filename)
+    quality = extract_quality(filename)
+	
     # Creating Directory for Metadata
     if not os.path.isdir("Metadata"):
         os.mkdir("Metadata")
- 
+        
+    # Extracting necessary information    
+    prefix = await jishubotz.get_prefix(update.message.chat.id)
+    suffix = await jishubotz.get_suffix(update.message.chat.id)
     new_name = update.message.text
-    new_filename = new_name.split(":-")[1]
+    new_filename_ = new_name.split(":-")[1]
+
+    try:
+        new_filename = add_prefix_suffix(new_filename_, prefix, suffix)
+    except Exception as e:
+        return await update.message.edit(f"Something Went Wrong Can't Able To Set Prefix Or Suffix 🥺 \n\n**Contact My Creator :** @CallAdminRobot\n\n**Error :** `{e}`")
+    
     file_path = f"downloads/{update.from_user.id}/{new_filename}"
     file = update.message.reply_to_message
+    data = f" New Animes -S01 - {episode} - {quality} Tamil "
 
-    ms = await update.message.edit("`Trying To Downloading⚡`")    
+    ms = await update.message.edit(text=data + "🚀 Try To Download... ⚡")
     try:
-     	path = await bot.download_media(message=file, file_name=file_path, progress=progress_for_pyrogram,progress_args=("`Download Started✨....`", ms, time.time()))                    
+     	path = await bot.download_media(message=file, file_name=file_path, progress=progress_for_pyrogram,progress_args=("🚀 Try To Downloading...  ⚡", ms, time.time()))                    
     except Exception as e:
      	return await ms.edit(e)
-     	     
+    
 
     # Metadata Adding Code
-    _bool_metadata = await db.get_metadata(update.message.chat.id)  
+    _bool_metadata = await jishubotz.get_metadata(update.message.chat.id) 
     
-    if (_bool_metadata):
+    if _bool_metadata:
+        metadata = await jishubotz.get_metadata_code(update.message.chat.id)
         metadata_path = f"Metadata/{new_filename}"
-        metadata = await db.get_metadata_code(update.message.chat.id)
-        if metadata:
-
-            await ms.edit("I Found Your Metadata🔥\n\n__Please Wait...__\n`Adding Metadata ⚡...`")
-            cmd = f"""ffmpeg -y -i "{path}" {metadata} "{metadata_path}" """
-
-            process = await asyncio.create_subprocess_shell(
-                cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-
-            stdout, stderr = await process.communicate()
-            er = stderr.decode()
-
-            try:
-                if er:
-                    return await ms.edit(str(er) + "\n\n**Error**")
-            except BaseException:
-                pass
-        await ms.edit("**Metadata Added To The File Successfully ✅**\n\n__**Please Wait...**__\n\n`😈Trying To Downloading`")
+        await add_metadata(path, metadata_path, metadata, ms)
     else:
-        await ms.edit("`😈Trying To Downloading`") 
+        await ms.edit("⏳ Mode Changing...  ⚡")
 
     duration = 0
     try:
@@ -127,8 +125,8 @@ async def doc(bot, update):
     ph_path = None
     user_id = int(update.message.chat.id) 
     media = getattr(file, file.media.value)
-    c_caption = await db.get_caption(update.message.chat.id)
-    c_thumb = await db.get_thumbnail(update.message.chat.id)
+    c_caption = await jishubotz.get_caption(update.message.chat.id)
+    c_thumb = await jishubotz.get_thumbnail(update.message.chat.id)
 
     if c_caption:
          try:
@@ -151,7 +149,7 @@ async def doc(bot, update):
                  print(e)  
 
 
-    await ms.edit("`Trying To Uploading💯`")
+    await ms.edit("💠 Try To Upload...  ⚡")
     type = update.data.split("_")[1]
     try:
         if type == "document":
@@ -161,7 +159,7 @@ async def doc(bot, update):
                 thumb=ph_path, 
                 caption=caption, 
                 progress=progress_for_pyrogram,
-                progress_args=("`Upload Started❤️‍🔥....`", ms, time.time()))
+                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
 
         elif type == "video": 
             await bot.send_video(
@@ -171,7 +169,7 @@ async def doc(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("`Upload Starte❤️‍🔥d....`", ms, time.time()))
+                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
 
         elif type == "audio": 
             await bot.send_audio(
@@ -181,17 +179,13 @@ async def doc(bot, update):
                 thumb=ph_path,
                 duration=duration,
                 progress=progress_for_pyrogram,
-                progress_args=("`Upload Started❤️‍🔥....`", ms, time.time()))
+                progress_args=("💠 Try To Uploading...  ⚡", ms, time.time()))
 
 
     except Exception as e:          
         os.remove(file_path)
         if ph_path:
             os.remove(ph_path)
-        if metadata_path:
-            os.remove(metadata_path)
-        if path:
-            os.remove(path)
         return await ms.edit(f"**Error :** `{e}`")    
  
     await ms.delete() 
@@ -199,5 +193,6 @@ async def doc(bot, update):
         os.remove(ph_path)
     if file_path:
         os.remove(file_path)
-    if metadata_path:
-        os.remove(metadata_path)
+
+
+
